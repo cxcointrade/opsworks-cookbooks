@@ -1,0 +1,37 @@
+sudo: required
+dist: xenial
+
+before_install:
+  - gem update bundler
+  - bundle update --bundler
+
+install: ./bin/ci/install_chef_dk.sh
+
+cache: bundler
+
+services: docker
+
+# kitchen list -b | xargs -I {} echo "- INSTANCE={}"
+env:
+  matrix:
+  - INSTANCE=default-deb-debian-9
+  - INSTANCE=default-deb-ubuntu-1804
+  - INSTANCE=default-rpm-centos-74
+  - INSTANCE=system-limits-deb-ubuntu-1804
+  - INSTANCE=lwrps
+  - INSTANCE=36x-lwrps
+  - INSTANCE=cluster-deb-ubuntu-1804
+  - INSTANCE=cluster-rpm
+  - INSTANCE=default-force-yes
+  - INSTANCE=default-force-yes-false
+
+before_script:
+  - sudo iptables -L DOCKER || ( echo "DOCKER iptables chain missing" ; sudo iptables -N DOCKER )
+
+script: KITCHEN_LOCAL_YAML=.kitchen.dokken.yml /opt/chefdk/embedded/bin/kitchen test ${INSTANCE}
+
+matrix:
+  include:
+    - script:
+      - /opt/chefdk/bin/chef exec rake
+      env: UNIT_AND_LINT=1
